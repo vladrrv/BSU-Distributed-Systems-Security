@@ -44,61 +44,74 @@ def run_client():
     send_msg(public_key.exportKey())
     print("Sent public key to server.")
 
-    sess_key = private_key.decrypt(recv_msg())
-    print("Received session key from server.")
-    print(sess_key)
+    def get_session_key():
+        sess_key = private_key.decrypt(recv_msg())
+        print("Received session key from server.")
+        return sess_key
 
-    cipher = serpent.new(key=sess_key, mode=serpent.MODE_CFB, segment_size=16)
-    decipher = serpent.new(key=sess_key, mode=serpent.MODE_CFB, segment_size=16)
+    def run_session(sess_key):
+        cipher = serpent.new(key=sess_key, mode=serpent.MODE_CFB, segment_size=16)
+        decipher = serpent.new(key=sess_key, mode=serpent.MODE_CFB, segment_size=16)
 
-    while True:
-        login = input("Login: ")
-        password = input("Password: ")
+        while True:
+            login = input("\nLogin: ")
+            password = input("Password: ")
 
-        send_msg(login, cipher)
-        send_msg(password, cipher)
+            send_msg(login, cipher)
+            send_msg(password, cipher)
 
-        auth_result = recv_msg(decipher, True)
-        if auth_result == MSG.SUCCESS:
-            break
-        else:
-            print("Authentication failed:", auth_result)
+            auth_result = recv_msg(decipher, True)
+            if auth_result == MSG.SUCCESS:
+                break
+            else:
+                print("Authentication failed:", auth_result)
 
-    def get_command():
-        cmd, *args = input("\nEnter command: ").split()
-        return cmd, args
+        def get_command():
+            cmd, *args = input("\nEnter command: ").split()
+            return cmd, args
 
-    while True:
-        command, args = get_command()
-        if command == 'r':
-            if len(args) == 0:
-                print("You need to specify file name.")
-                continue
-            filename = args[0]
-            send_msg(CMD.FILE, cipher)
-            send_msg(filename, cipher)
-            print("Sent filename to server.")
-            result = recv_msg(decipher, True)
-            text = recv_msg(decipher, True)
-            if result == MSG.SUCCESS:
-                print("Received text from server.")
-                print(text)
-            elif result == MSG.ERROR:
-                print("Failed to receive text from server:", text)
+        while True:
+            command, args = get_command()
+            if command == 'r':
+                if len(args) == 0:
+                    print("You need to specify file name.")
+                    continue
+                filename = args[0]
+                send_msg(CMD.FILE, cipher)
+                send_msg(filename, cipher)
+                print("Sent filename to server.")
+                result = recv_msg(decipher, True)
+                if result == MSG.SUCCESS:
+                    text = recv_msg(decipher, True)
+                    print("Received text from server.")
+                    print(text)
+                elif result == MSG.ERROR:
+                    error_text = recv_msg(decipher, True)
+                    print("Failed to receive text from server:", error_text)
+                elif result == MSG.EXP_SESS:
+                    print("Session expired.")
+                    return True
+                else:
+                    print("Invalid result.")
 
-        elif command == 'q':
-            send_msg(CMD.QUIT, cipher)
-            print("Quit.")
-            break
+            elif command == 'q':
+                send_msg(CMD.QUIT, cipher)
+                print("Quit.")
+                return False
 
-        elif command == 'g':
-            private_key = generate_new_key()
-            print("Generated new private RSA key.")
+            elif command == 'g':
+                private_key = generate_new_key()
+                print("Generated new private RSA key.")
 
-        else:
-            print("Unknown command.")
+            else:
+                print("Unknown command.")
 
+    while run_session(get_session_key()):
+        pass
+
+    print("Client stopped.")
     server.close()
 
 
-run_client()
+if __name__ == "__main__":
+    run_client()

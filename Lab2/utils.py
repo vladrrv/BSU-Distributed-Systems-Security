@@ -7,6 +7,7 @@ ENC = 'UTF-8'
 class MSG:
     SUCCESS = "SUCCESS"
     ERROR = "ERROR"
+    EXP_SESS = "EXP_SESS"
 
 
 class CMD:

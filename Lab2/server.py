@@ -4,10 +4,12 @@ from CryptoPlus.Cipher import python_Serpent as serpent
 import random
 import os
 import base64
+import time
 
 from utils import *
 
 USERS_PATH = '.\\users'
+SESSION_MAX_TIME = 30
 
 
 def authenticate(user, password):
@@ -54,48 +56,62 @@ def run_server():
         msg = decipher.decrypt(encr_msg) if decipher is not None else encr_msg
         return msg.decode() if decode else msg
 
-    sess_key = bytes(random.getrandbits(8) for _ in range(16))
-    print("Generated session key:", sess_key)
+    def generate_session_key():
+        sess_key = bytes(random.getrandbits(8) for _ in range(16))
+        print("Generated session key:", sess_key)
 
-    send_msg(client_public_key.encrypt(sess_key, 32)[0])
-    print("Sent session key to client.")
+        send_msg(client_public_key.encrypt(sess_key, 32)[0])
+        print("Sent session key to client.")
+        return sess_key
 
-    cipher = serpent.new(key=sess_key, mode=serpent.MODE_CFB, segment_size=16)
-    decipher = serpent.new(key=sess_key, mode=serpent.MODE_CFB, segment_size=16)
+    def run_session(sess_key):
+        cipher = serpent.new(key=sess_key, mode=serpent.MODE_CFB, segment_size=16)
+        decipher = serpent.new(key=sess_key, mode=serpent.MODE_CFB, segment_size=16)
 
-    while True:
-        login = recv_msg(decipher)
-        password = recv_msg(decipher)
-        is_auth, user_dir = authenticate(login, password)
-        if is_auth:
-            send_msg(MSG.SUCCESS, cipher)
-            break
-        else:
-            send_msg("invalid username/password", cipher)
-
-    while True:
-        cmd = recv_msg(decipher, True)
-        if cmd == CMD.FILE:
-            filename = recv_msg(decipher, True)
-            print("Received filename from client.")
-            print(filename)
-            path = os.path.join(user_dir, filename)
-            text = read_file(path)
-            if text is None:
-                send_msg(MSG.ERROR, cipher)
-                text = "No such file!"
-            else:
+        while True:
+            login = recv_msg(decipher)
+            password = recv_msg(decipher)
+            is_auth, user_dir = authenticate(login, password)
+            if is_auth:
                 send_msg(MSG.SUCCESS, cipher)
-            send_msg(text, cipher)
-            print("Sent text to client.")
-        elif cmd == CMD.QUIT:
-            break
-        else:
-            print("Invalid cmd.")
+                break
+            else:
+                send_msg("invalid username/password", cipher)
 
-    print("Server stopped")
+        t1 = time.clock()
+        while True:
+            cmd = recv_msg(decipher, True)
+            if cmd == CMD.FILE:
+                t2 = time.clock()
+                if t2-t1 > SESSION_MAX_TIME:
+                    print("Session expired.")
+                    c.recv(4096)
+                    send_msg(MSG.EXP_SESS, cipher)
+                    return True
+                filename = recv_msg(decipher, True)
+                print("Received filename from client.")
+                print(filename)
+                path = os.path.join(user_dir, filename)
+                text = read_file(path)
+                if text is None:
+                    send_msg(MSG.ERROR, cipher)
+                    text = "No such file!"
+                else:
+                    send_msg(MSG.SUCCESS, cipher)
+                send_msg(text, cipher)
+                print("Sent text to client.")
+            elif cmd == CMD.QUIT:
+                return False
+            else:
+                print("Invalid cmd.")
+
+    while run_session(generate_session_key()):
+        pass
+
+    print("Server stopped.")
     c.close()
 
 
-run_server()
+if __name__ == "__main__":
+    run_server()
 

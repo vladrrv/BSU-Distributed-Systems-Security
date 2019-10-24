@@ -33,18 +33,17 @@ def run_client():
         msg = decipher.decrypt(encr_msg) if decipher is not None else encr_msg
         return msg.decode() if decode else msg
 
-    reg_private_key = get_reg('private_key')
-    if reg_private_key is None:
-        private_key = generate_new_key()
-    else:
-        private_key = RSA.importKey(reg_private_key.encode(ENC))
-    public_key = private_key.publickey()
-
-    # Send public key to server
-    send_msg(public_key.exportKey())
-    print("Sent public key to server.")
-
     def get_session_key():
+        reg_private_key = get_reg('private_key')
+        if reg_private_key is None:
+            private_key = generate_new_key()
+        else:
+            private_key = RSA.importKey(reg_private_key.encode(ENC))
+        public_key = private_key.publickey()
+
+        # Send public key to server
+        send_msg(public_key.exportKey())
+        print("Sent public key to server.")
         sess_key = private_key.decrypt(recv_msg())
         print("Received session key from server.")
         return sess_key

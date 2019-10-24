@@ -40,11 +40,6 @@ def run_server():
     mysocket.listen(5)
     c, addr = mysocket.accept()
 
-    # Receive public key from client
-    client_string = c.recv(1024)
-    client_public_key = RSA.importKey(client_string)
-    print("Public key received from client.")
-
     def send_msg(msg, cipher=None):
         if type(msg) is str:
             msg = msg.encode(ENC)
@@ -59,6 +54,11 @@ def run_server():
     def generate_session_key():
         sess_key = bytes(random.getrandbits(8) for _ in range(16))
         print("Generated session key:", sess_key)
+
+        # Receive public key from client
+        client_string = c.recv(1024)
+        client_public_key = RSA.importKey(client_string)
+        print("Public key received from client.")
 
         send_msg(client_public_key.encrypt(sess_key, 32)[0])
         print("Sent session key to client.")

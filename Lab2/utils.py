@@ -1,4 +1,5 @@
 import winreg
+import os
 
 
 ENC = 'UTF-8'
@@ -11,11 +12,25 @@ class MSG:
 
 
 class CMD:
-    FILE = "FILE"
+    RECV = "RECV"
+    SEND = "SEND"
     QUIT = "QUIT"
 
 
 REG_PATH = r"Lab2"
+
+
+def read_file(path):
+    text = None
+    if os.path.isfile(path):
+        with open(path, 'r') as f:
+            text = f.read()
+    return text
+
+
+def save_file(text, path):
+    with open(path, 'w') as f:
+        f.write(text)
 
 
 def set_reg(name, value):

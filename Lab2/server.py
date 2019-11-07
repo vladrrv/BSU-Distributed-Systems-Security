@@ -9,7 +9,7 @@ import time
 from utils import *
 
 USERS_PATH = '.\\users'
-SESSION_MAX_TIME = 30
+SESSION_MAX_TIME = 90
 
 
 def authenticate(user, password):
@@ -20,12 +20,6 @@ def authenticate(user, password):
     return os.path.isdir(user_dir), user_dir
 
 
-def read_file(path):
-    text = None
-    if os.path.isfile(path):
-        with open(path, 'r') as f:
-            text = f.read()
-    return text
 
 
 def run_server():
@@ -81,7 +75,7 @@ def run_server():
         t1 = time.clock()
         while True:
             cmd = recv_msg(decipher, True)
-            if cmd == CMD.FILE:
+            if cmd == CMD.RECV:
                 t2 = time.clock()
                 if t2-t1 > SESSION_MAX_TIME:
                     print("Session expired.")
@@ -100,6 +94,24 @@ def run_server():
                     send_msg(MSG.SUCCESS, cipher)
                 send_msg(text, cipher)
                 print("Sent text to client.")
+            elif cmd == CMD.SEND:
+                t2 = time.clock()
+                if t2-t1 > SESSION_MAX_TIME:
+                    print("Session expired.")
+                    c.recv(4096)
+                    c.recv(4096)
+                    send_msg(MSG.EXP_SESS, cipher)
+                    return True
+                text = recv_msg(decipher, True)
+                print("Received text from client.")
+                print(text)
+                filename = recv_msg(decipher, True)
+                print("Received filename from client.")
+                print(filename)
+                path = os.path.join(user_dir, filename)
+                save_file(text, path)
+                send_msg(MSG.SUCCESS, cipher)
+
             elif cmd == CMD.QUIT:
                 return False
             else:

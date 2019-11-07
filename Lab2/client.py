@@ -76,7 +76,7 @@ def run_client():
                     print("You need to specify file name.")
                     continue
                 filename = args[0]
-                send_msg(CMD.FILE, cipher)
+                send_msg(CMD.RECV, cipher)
                 send_msg(filename, cipher)
                 print("Sent filename to server.")
                 result = recv_msg(decipher, True)
@@ -97,6 +97,22 @@ def run_client():
                 send_msg(CMD.QUIT, cipher)
                 print("Quit.")
                 return False
+
+            elif command == 's':
+                if len(args) == 0:
+                    print("You need to specify file name.")
+                    continue
+                filename = args[0]
+                text = read_file(filename)
+                send_msg(CMD.SEND, cipher)
+                send_msg(text, cipher)
+                print("Sent text to server.")
+                send_msg(filename.split(sep='/')[-1], cipher)
+                print("Sent filename to server.")
+                result = recv_msg(decipher, True)
+                if result == MSG.EXP_SESS:
+                    print("Session expired.")
+                    return True
 
             elif command == 'g':
                 private_key = generate_new_key()

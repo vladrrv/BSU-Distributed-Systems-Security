@@ -5,8 +5,6 @@ from EllipticGroup import *
 
 def find_c(g):
     c = 2
-    if g.group.zero is None:
-        raise RuntimeError('No zero in group!')
     while g*c != g.group.zero:
         # print(c, end='\r')
         c += 1
@@ -15,11 +13,10 @@ def find_c(g):
 
 def find_g(group):
     for g in group.elements:
-        if g == group.zero:
-            continue
         c = find_c(g)
-        if is_prime(c):
+        if is_prime(c) and c >= group.M:
             return g, c
+    raise RuntimeError('G not found')
 
 
 def h(m):
@@ -27,19 +24,26 @@ def h(m):
 
 
 def exchange(group):
+    # ----- EXAMPLE FROM PAPER - WORKING WELL ------
     # group = EllipticGroup(0, -4, 211)
+    # print(group)
     # n_a = 121
     # n_b = 203
+    # g, c = group[2], 241
+    # ----------------------------------------------
+    print('Key Exchange')
     g, c = find_g(group)
+    print(f'G: {g}, c: {c}')
     n_a = np.random.randint(1, group.M)
     n_b = np.random.randint(1, group.M)
-
+    print(f'n_A: {n_a}\nn_B: {n_b}')
     p_a = n_a*g
     p_b = n_b*g
-
+    print(f'p_A: {p_a}\np_B: {p_b}')
     ka = n_a * p_b
     kb = n_b * p_a
-    print(ka, kb)
+    print(f'K_A: {ka}\nK_B: {kb}')
+    print('-'*20)
 
 
 def ecdsa_sign(m, n_a, g, q):
@@ -67,20 +71,21 @@ def ecdsa_check(m, p_a, g, q, signature):
 
 
 def main():
-    group = EllipticGroup(1, 1, 73)
-    print(group.elements)
+
+    group = EllipticGroup(23, 41, 73)
+    print(group)
 
     exchange(group)
 
-    m = 'bsdfbsa4fgtn'
-    g, q = find_g(group)
-    n_a = np.random.randint(1, group.M)
-    p_a = n_a*g
-    print(f'G: {g}, q: {q}, n_a: {n_a}, P_a: {p_a}')
-    signature = ecdsa_sign(m, n_a, g, q)
-    is_valid = ecdsa_check(m, p_a, g, q, signature)
-
-    print(signature, is_valid)
+    # m = 'bsdfbsa4fgtn'
+    # g, q = find_g(group)
+    # n_a = np.random.randint(1, group.M)
+    # p_a = n_a*g
+    # print(f'G: {g}, q: {q}, n_a: {n_a}, P_a: {p_a}')
+    # signature = ecdsa_sign(m, n_a, g, q)
+    # is_valid = ecdsa_check(m, p_a, g, q, signature)
+    #
+    # print(signature, is_valid)
 
 
 if __name__ == "__main__":

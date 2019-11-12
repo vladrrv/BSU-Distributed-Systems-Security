@@ -1,26 +1,13 @@
 import numpy as np
+from hashlib import sha256
 
-from EllipticGroup import *
-
-
-def find_c(g):
-    c = 2
-    while g*c != g.group.zero:
-        # print(c, end='\r')
-        c += 1
-    return c
+from elliptic_group import *
 
 
-def find_g(group):
-    for g in group.elements:
-        c = find_c(g)
-        if is_prime(c) and c >= group.M:
-            return g, c
-    raise RuntimeError('G not found')
-
-
-def h(m):
-    return hash(m)
+def print_header(header, w=21):
+    print('='*w)
+    print(header.center(w))
+    print('-'*w)
 
 
 def exchange(group):
@@ -31,22 +18,25 @@ def exchange(group):
     # n_b = 203
     # g, c = group[2], 241
     # ----------------------------------------------
-    print('Key Exchange')
-    g, c = find_g(group)
+    print_header('Key Exchange')
+
+    g, c = group.find_g()
     print(f'G: {g}, c: {c}')
+
     n_a = np.random.randint(1, group.M)
     n_b = np.random.randint(1, group.M)
     print(f'n_A: {n_a}\nn_B: {n_b}')
+
     p_a = n_a*g
     p_b = n_b*g
     print(f'p_A: {p_a}\np_B: {p_b}')
+
     ka = n_a * p_b
     kb = n_b * p_a
     print(f'K_A: {ka}\nK_B: {kb}')
-    print('-'*20)
 
 
-def ecdsa_sign(m, n_a, g, q):
+def ecdsa_sign(m, h, n_a, g, q):
     s = 0
     while s == 0:
         r = 0
@@ -58,7 +48,7 @@ def ecdsa_sign(m, n_a, g, q):
     return r, s
 
 
-def ecdsa_check(m, p_a, g, q, signature):
+def ecdsa_check(m, h, p_a, g, q, signature):
     r, s = signature
     if max(r, s) >= q or min(r, s) < 1:
         return False
@@ -70,22 +60,47 @@ def ecdsa_check(m, p_a, g, q, signature):
     return r == r_
 
 
-def main():
+def ecdsa(group):
+    print_header('ECDSA')
 
-    group = EllipticGroup(23, 41, 73)
+    m = 'bsdfbsa4fgtn'
+    print(f'Message: {m}')
+
+    g, q = group.find_g()
+    n_a = np.random.randint(1, group.M)
+    p_a = n_a*g
+    print(f'G: {g}, q: {q}')
+    print(f'n_A: {n_a}\nP_A: {p_a}')
+
+    def h(data):
+        if isinstance(data, str):
+            data = data.encode('utf-8')
+        hashed = int.from_bytes(sha256(data).digest(), 'big')
+        return hashed
+
+    signature = ecdsa_sign(m, h, n_a, g, q)
+    print(f'Signature: {signature}')
+
+    is_valid = ecdsa_check(m, h, p_a, g, q, signature)
+    print(f'Check: {is_valid}')
+
+
+def main():
+    M = 73
+    # gen = EllipticGroup.generate_good_ab(M, progress=True)
+    # a, b = next(gen)
+    # print(a, b)
+    # a, b = next(gen)
+    # print(a, b)
+
+    a = 1
+    b = 13  # 60
+    group = EllipticGroup(a, b, M)
     print(group)
 
     exchange(group)
 
-    # m = 'bsdfbsa4fgtn'
-    # g, q = find_g(group)
-    # n_a = np.random.randint(1, group.M)
-    # p_a = n_a*g
-    # print(f'G: {g}, q: {q}, n_a: {n_a}, P_a: {p_a}')
-    # signature = ecdsa_sign(m, n_a, g, q)
-    # is_valid = ecdsa_check(m, p_a, g, q, signature)
-    #
-    # print(signature, is_valid)
+    ecdsa(group)
 
 
 if __name__ == "__main__":

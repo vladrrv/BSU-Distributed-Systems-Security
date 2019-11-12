@@ -11,13 +11,6 @@ def print_header(header, w=21):
 
 
 def exchange(group):
-    # ----- EXAMPLE FROM PAPER - WORKING WELL ------
-    # group = EllipticGroup(0, -4, 211)
-    # print(group)
-    # n_a = 121
-    # n_b = 203
-    # g, c = group[2], 241
-    # ----------------------------------------------
     print_header('Key Exchange')
 
     g, c = group.find_g()
@@ -98,8 +91,9 @@ def main():
     group = EllipticGroup(a, b, M)
     print(group)
 
-    exchange(group)
+    np.random.seed(42)
 
+    exchange(group)
     ecdsa(group)
 
 

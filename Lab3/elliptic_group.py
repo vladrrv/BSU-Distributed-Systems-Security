@@ -147,8 +147,7 @@ class EllipticGroup:
                 group.find_g()
                 yield a, b
             except RuntimeError:
-                ab = next(all_ab)
-                continue
+                pass
             ab = next(all_ab)
 
     def __init__(self, a, b, M):
@@ -160,7 +159,7 @@ class EllipticGroup:
         self.elements = []
         self.zero = EllipticGroup.ZeroElement(self)
         f = lambda x: (x**3 + a*x + b) % M
-        for x in range(1, M):
+        for x in range(M):
             roots = sqrt(f(x), M)
             for y in roots:
                 e = EllipticGroup.NonZeroElement(self, x, y)

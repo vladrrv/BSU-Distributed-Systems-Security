@@ -86,9 +86,10 @@ input:focus {
     margin-top: 12px;
 }
 
-.error-tip {
-    font-size: 12px;
+.password-field:after {
+    font-size: 10pt;
     color: #822;
-    display: block;
-    margin-top: 12px;
+    content: attr(data-error);
+    /*display: block;*/
+    /*margin-top: 12px;*/
 }

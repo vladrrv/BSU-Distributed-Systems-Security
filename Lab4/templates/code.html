@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="/static/style.css" type="text/css">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+{% block body %}
+
+    <form action="/code" method="POST">
+        <div class="login">
+            <div class="login-screen">
+                <div class="app-title">
+                    <h1>Enter code</h1>
+                </div>
+                <div class="login-form">
+                    <div class="control-group password-field"
+                            {% if wrong %} data-error="Invalid code"
+                            {% else %} data-error="" {% endif %}>
+                        <input id="login-pass" type="password" class="login-field" value="" placeholder="XXXXXX" name="code">
+                        <label class="login-field-icon fui-lock" for="login-pass"></label>
+                    </div>
+                    <input type="submit" value="Confirm" class="btn btn-primary btn-large btn-block">
+                </div>
+            </div>
+        </div>
+    </form>
+
+{% endblock %}

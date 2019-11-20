@@ -1,4 +1,5 @@
 <link rel="stylesheet" href="/static/style.css" type="text/css">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
 {% block body %}
 
     <form action="/login" method="POST">
@@ -12,11 +13,10 @@
                         <input id="login-name" type="text" class="login-field" value="" placeholder="username" name="username">
                         <label class="login-field-icon fui-user" for="login-name"></label>
                     </div>
-                    {% if wrong %}
-                        <p class="error-tip" style="color:#822;">Invalid username/password</p>
-                    {% endif %}
-                    <div class="control-group">
-                        <input id="login-pass"  type="password" class="login-field" value="" placeholder="password" name="password">
+                    <div class="control-group password-field"
+                            {% if wrong %} data-error="Invalid username/password"
+                            {% else %} data-error="" {% endif %}>
+                        <input id="login-pass" type="password" class="login-field" value="" placeholder="password" name="password">
                         <label class="login-field-icon fui-lock" for="login-pass"></label>
                     </div>
                     <input type="submit" value="Log in" class="btn btn-primary btn-large btn-block">

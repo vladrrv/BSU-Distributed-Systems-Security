@@ -9,6 +9,8 @@ class MSG:
     SUCCESS = "SUCCESS"
     ERROR = "ERROR"
     EXP_SESS = "EXP_SESS"
+    CODE_EXPIRED = "Code expired - sending new code"
+    CODE_INVALID = "Invalid code"
 
 
 class CMD:

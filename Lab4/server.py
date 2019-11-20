@@ -23,6 +23,15 @@ def authenticate(user, password):
     return os.path.isdir(user_dir), user_dir
 
 
+def send_code(totp, token, chat_id):
+    # get code and send to telegram
+    code = totp.now()
+    code_text = f"Your code: {code}"
+    send_text = f'https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&parse_mode=Markdown&text={code_text}'
+    response = requests.get(send_text)
+    return code
+
+
 def run_server():
     mysocket = socket.socket()
     host = socket.gethostbyname('localhost')
@@ -73,30 +82,29 @@ def run_server():
             else:
                 send_msg("invalid username/password", cipher)
 
+        totp = pyotp.TOTP('base32secret3232', interval=60)
+        with open(os.path.join(user_dir, 'userinfo.json')) as f:
+            data = json.load(f)
+            chat_id = data['chat_id']
+            token = data['token']
+
+        code = send_code(totp, token, chat_id)
+
         while True:
-            totp = pyotp.TOTP('base32secret3232')
-            code = totp.now()
-
-            with open(os.path.join(user_dir, 'userinfo.json')) as f:
-                data = json.load(f)
-                chat_id = data['chat_id']
-                token = data['token']
-            # send to telegram
-            code_text = f"Your code: {code}"
-            send_text = f'https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&parse_mode=Markdown&text={code_text}'
-            response = requests.get(send_text)
-
             client_code = recv_msg(decipher, True)
             if totp.verify(client_code):
                 send_msg(MSG.SUCCESS, cipher)
                 break
+            elif client_code == code:
+                send_msg(MSG.CODE_EXPIRED, cipher)
+                code = send_code(totp, token, chat_id)
             else:
-                send_msg("invalid code", cipher)
+                send_msg(MSG.CODE_INVALID, cipher)
 
-        t1 = time.clock()
+        t1 = time.time()
         while True:
             cmd = recv_msg(decipher, True)
-            t2 = time.clock()
+            t2 = time.time()
             if t2-t1 > SESSION_MAX_TIME:
                 print("Session expired.")
                 c.recv(4096)

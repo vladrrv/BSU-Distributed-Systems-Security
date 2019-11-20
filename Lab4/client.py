@@ -58,9 +58,9 @@ def run_client():
 
         # Send public key to server
         send_msg(public_key.exportKey(), to_cipher=False)
-        print("Sent public key to server.")
+        # print("Sent public key to server.")
         sess_key = private_key.decrypt(recv_msg())
-        print("Received session key from server.")
+        # print("Received session key from server.")
         print(f"Please log in here: http://{app_host}:{app_port}/")
         # print(sess_key)
         return sess_key
@@ -84,11 +84,9 @@ def run_client():
     def code_check(code):
         send_msg(code)
         result = recv_msg(decode=True)
-        if result == MSG.SUCCESS:
-            return True
-        else:
+        if result != MSG.SUCCESS:
             print("Code check failed:", result)
-        return False
+        return result
 
     @app.route('/')
     def home():
@@ -99,14 +97,14 @@ def run_client():
         if not session.get('logged_in'):
             return render_template('login.html', wrong=session.get('wrong', False))
         elif not session.get('confirmed'):
-            return render_template('code.html', wrong=session.get('wrong', False))
+            return render_template('code.html', wrong=session.get('wrong', False), expired=session.get('expired', False))
         else:
-            return "Hello!"
+            return render_template('welcome.html')
 
     @app.route('/login', methods=['POST'])
     def login():
+        session['wrong'] = False
         if auth(request.form['username'], request.form['password']):
-            session['wrong'] = False
             session['logged_in'] = True
             login_event.set()
         else:
@@ -115,10 +113,14 @@ def run_client():
 
     @app.route('/code', methods=['POST'])
     def confirm():
-        if code_check(request.form['code']):
-            session['wrong'] = False
+        session['wrong'] = False
+        session['expired'] = False
+        result = code_check(request.form['code'])
+        if result == MSG.SUCCESS:
             session['confirmed'] = True
             code_event.set()
+        elif result == MSG.CODE_EXPIRED:
+            session['expired'] = True
         else:
             session['wrong'] = True
         return redirect('/')
@@ -149,7 +151,7 @@ def run_client():
                 print("Sent filename to server.")
                 result = recv_msg(decode=True)
                 if result == MSG.SUCCESS:
-                    text = recv_msg(True)
+                    text = recv_msg(decode=True)
                     print("Received text from server.")
                     print(text)
                 elif result == MSG.ERROR:
